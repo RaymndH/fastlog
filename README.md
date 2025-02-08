@@ -7,5 +7,7 @@ It is fairly trivial to calculate the floor of log base 2 of an integer by analy
 
 ## First approximation
 
+## Second Order Approximation
+
 ## Newton's method
 
