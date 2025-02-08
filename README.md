@@ -11,3 +11,5 @@ It is fairly trivial to calculate the floor of log base 2 of an integer by analy
 
 ## Newton's method
 
+We can use Newton's method to iterate from a close guess to a better one, using the derivative of the graph.
+
