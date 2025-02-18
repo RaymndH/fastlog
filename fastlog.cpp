@@ -8,6 +8,7 @@
 #include <string>
 #include <bitset>
 #include <random>
+#include <cmath>
 
 #define ln2 0x3f317218;
 
@@ -46,28 +47,6 @@ uint32_t bounded_rand(uint32_t range) {
     return m >> 32;
 }
 
-
-
-void floatToBinary(float f, string& str)
-{
-    union { float f; uint32_t i; } u;
-    u.f = f;
-    str.clear();
-
-    for (int i = 0; i < 32; i++)
-    {
-        if (u.i % 2)  str.push_back('1');
-        else str.push_back('0');
-        u.i >>= 1;
-    }
-
-    // Reverse the string since now it's backwards
-    string temp(str.rbegin(), str.rend());
-    temp.insert(9,  " ");
-    temp.insert(1,  " ");
-    str = temp;
-}
-
 unsigned int clz(unsigned int num) {
     return __builtin_clz(num);
 }
@@ -76,14 +55,6 @@ unsigned int ctz(unsigned int num) {
     return __builtin_ctz(num);
 }
 
-//unsigned int bsr(unsigned int num) {
-//    return __builtin_bsr(num);
-//}
-
-void printint(unsigned a) {
-    std::bitset<32> x(a);
-    std::cout << x << endl;
-}
 
 float foofastlog (unsigned int x) {
     unsigned int b = 32 - clz(x) - 1;
@@ -102,14 +73,31 @@ float fff(uint32_t x) {
 
 }
 
-float fff2(uint32_t x) {
+float nfff(uint32_t x) {
+    return -.69314718056*(fff(x) - 32);
+}
 
+
+float fastlog3(uint32_t x) {
+    if (x==2147483648) {
+         cout << x;
+    }
     unsigned int b = 32 - clz(x) - 1;
-    float rem = ( x & ((1<<(b))-1) ) >> b;
-    rem = abs(rem); //division
-    //cout << "rem is: " << rem << endl;
-    return (b + 1.3463 * rem - .3463 * rem * rem);
-
+    float rem = ( x & ((1<<(b))-1) );
+    if (b!=31) {
+        rem = rem/(1<<b); //division
+    }
+    else {
+        rem = x * 0x1.0p-31 - 1 ;
+    }
+    float c3 = .1307;
+    float c2 = -.5375;
+    float c1 = 1.4068;
+    float rv = float(b) - 32 + c3 * rem * rem * rem + c2 * rem * rem + c1 * rem;
+    return rv;
+}
+float nf3(uint32_t x) {
+    return -.69314718056*(fastlog3(x));
 }
 
 float foofasterlog (uint32_t x) {
@@ -135,19 +123,9 @@ double exp1_(double x) {
 volatile float result = 0;
 
 int main() { 
-    unsigned int x = 832849138; // 255 is 2^8 - 1 =  0(*24) 1(*8) log2 is 7.99
-    cout << "bits: ";
-     printint(x);
-     cout << endl;
-    cout << "log2 is " << log2(x) << endl;
     
-    cout << "fff is " << fff(x) << endl;
-    cout << "fff2 is " << fff2(x) << endl;
-    //float fx = x * (1>>32);
-    cout << "normalized x is" << x << endl;
-    cout << "ln x is " << log(x) << endl;
     size_t iters = 4294967295;
-    iters = 1e5;
+    iters = 1e6;
     vector<float> fvec ;
     vector<int> ivec ;
 
@@ -161,10 +139,10 @@ int main() {
     for(int i = 0; i < 4; ++i) {
         s[i] = rd();
     }
-    s[0] = 245234;
-    s[1] = 232342423;
-    s[2] = 789273;
-    s[3] = 839;
+    //s[0] = 245234;
+    //s[1] = 232342423;
+    //s[2] = 789273;
+    //s[3] = 839;
     
 
     for(size_t i = 0; i < iters; ++i) {
@@ -173,19 +151,13 @@ int main() {
     }
 
     
-    float dump = 0;
     auto start = std::chrono::high_resolution_clock::now();
     size_t trials = 1000;
-    for (size_t j = 0; j < trials; ++j) {
-        for(uint i = 1; i < iters; ++i) {
-            counter +=  exp(-(fvec[i] / T)) >  0x1.0p-32 * next()  ;
-        }
-    }
+   
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     float t1 = elapsed.count();
-    std::cout << "Elapsed time: " << elapsed.count() << " seconds" << std::endl;
-    cout << "counter is " << counter << endl;
+    
 
 
     counter = 0;
@@ -194,19 +166,40 @@ int main() {
         logcounts.push_back(0);
     }
 
-    /*
-    uint32_t f = 3579644072;
-    cout << "a/2^32 = " << 0x1.0p-32 * f;
-    cout << fff2(f) << endl;
-    cout  << ": " << -.69314718056*(fff2(f) - 32)  << " " << - log( 0x1.0p-32 * f ) << "\n";
-    for(int i = 0; i < 10; i++) {
-        //logcounts[int(foofastlog(next()))]++;
-        auto a = next();
-        cout << "a: " << a << endl;
-        cout << "a/2^32 = " << 0x1.0p-32 * a;
-        cout << i << ": " << -.69314718056*(fff2(a) - 32)  << " " << - log( 0x1.0p-32 * a ) << "\n";
-        //cout << i << ": " << .69314718056  * fff(a)  << " " << - log( (double)(next()) / (2L << 31) ) << "\n";
-    }*/
+    
+    uint32_t f = 2524468831;
+    cout << "a/2^32 = " << 0x1.0p-32 * f << endl;
+    cout << fastlog3(f) << endl;
+    cout << foofastlog(f) << endl;
+    cout  << ": " << -.69314718056*(fastlog3(f) - 32)  << " " << - log( 0x1.0p-32 * f ) << "\n";
+    double error=0;
+    //for(uint32_t i = 0; i < 4 294 967 295; i++) {
+    uint32_t numiters = 4294967295;
+    float maxerr = 0;
+    //500000000
+    //2524468820
+    for(uint32_t i = 4294967295; i < numiters; i++) {
+        if (i == 253){
+            cout << i;
+        }
+        auto partial = abs( fastlog3(i) - log2( 0x1.0p-32 *i) );
+        if (partial > maxerr) maxerr = partial;
+        //cout << partial << endl;
+        if (partial > .005) {
+            cout << "large error at i = " << i << "\n" << "log is " << log2( 0x1.0p-32 *i) << " calclog is " << fastlog3(i) ;
+            cout << "error is " << partial << endl;
+            //break;
+        }
+        error += partial / numiters ;
+        if(isnan(error)) {
+            cout << "nan error at i = " << i << "\n" << "log is " << log2( 0x1.0p-32 *i);
+            break;
+        }
+
+        if (i % 100000000 == 0 ) cout<< 100*float(i)/numiters << " percent done" << endl;
+    }
+    std::cout << "\n\navg error = " << error*100 << " percent" << endl;
+    cout << "max error = " << maxerr << endl;
    
 
    
@@ -214,13 +207,13 @@ int main() {
     start = std::chrono::high_resolution_clock::now();
     for (size_t j = 0; j < trials; ++j) {
         for(uint i = 1; i < iters; ++i) {
-            counter +=   fvec[i] * b <  (-.69314718056*(fff(next()) - 32) ) ;
+            counter +=   fvec[i] * b <  ( nf3(i) ) ;
         }
     }
     end = std::chrono::high_resolution_clock::now();
     elapsed = end - start;
     float t2 = elapsed.count();
-    std::cout << "Elapsed time: " << t2 << " seconds" << std::endl;
+    std::cout << "Elapsed time nf3: " << t2 << " seconds" << std::endl;
     cout << "counter is " << counter << endl;
 
     counter = 0;
@@ -228,29 +221,32 @@ int main() {
     start = std::chrono::high_resolution_clock::now();
     for (size_t j = 0; j < trials; ++j) {
         for(uint i = 1; i < iters; ++i) {
-            auto randint = next();
-            counter +=   fvec[i] * b < (-.69314718056*(fff2(next()) - 32) ) ;
+            //auto randint = next();
+            counter +=   exp1_(-(fvec[i] / T)) >  0x1.0p-32 * next()  ;
         }
     }
     end = std::chrono::high_resolution_clock::now();
     elapsed = end - start;
 
-    std::cout << "Elapsed time: " << elapsed.count() << " seconds" << std::endl;
+    std::cout << "Elapsed time exp: " << elapsed.count() << " seconds" << std::endl;
     cout << "counter is " << counter << endl;
 
     size_t errors = 0;
     for (size_t j = 0; j < trials; ++j) {
-        for(uint i = 1; i < iters; ++i) {
+        for(uint i = 1; i < 10; ++i) {
             auto randint = next();
-            if ( fvec[i] * b < (-.69314718056*(fff2(randint) - 32) ) != (exp(-(fvec[i] / T)) >  0x1.0p-32 * randint  )) {
+            //if ( fvec[i] * b < ( nf3(randint) ) != (exp(-(fvec[i] / T)) >  0x1.0p-32 * randint  )) {
+            //if ( (exp1_(-(fvec[i] / T)) >  0x1.0p-32 * randint  ) != (exp(-(fvec[i] / T)) >  0x1.0p-32 * randint  )) {
+                
                 ++errors;
             }
+            
         }
     }
-
+    cout << errors << "total errors" << endl;
     cout << (float)errors/(trials * iters) * 100 << "% error." << endl;
 
-    std::cout  << "Ratio: " << abs(t1 - 0) / elapsed.count() << std::endl;
+    std::cout  << "Ratio: " << t2 / elapsed.count() << std::endl;
 
 
 
